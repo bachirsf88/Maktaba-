@@ -23,11 +23,67 @@ class BookRepository {
      * )
      */
     private val booksList = listOf(
-        Book(isbn = "", title = "Clean Code", nbPages = 0),
-        Book(isbn = "", title = "The Pragmatic Programmer", nbPages = 0),
-        Book(isbn = "", title = "Design Patterns", nbPages = 0),
-        Book(isbn = "", title = "Refactoring", nbPages = 0),
-        Book(isbn = "", title = "Head First Design Patterns", nbPages = 0)
+        Book(
+            isbn = "978-0-13-235088-4",
+            title = "Clean Code",
+            nbPages = 464
+        ),
+
+        Book(
+            isbn = "978-0-13-595705-9",
+            title = "The Pragmatic Programmer",
+            nbPages = 352
+        ),
+
+        Book(
+            isbn = "978-0-13-475771-1",
+            title = "Refactoring: Improving the Design of Existing Code",
+            nbPages = 448
+        ),
+
+        Book(
+            isbn = "978-0-201-63361-0",
+            title = "Design Patterns: Elements of Reusable Object-Oriented Software",
+            nbPages = 416
+        ),
+
+        Book(
+            isbn = "978-0-262-03384-8",
+            title = "Introduction to Algorithms",
+            nbPages = 1312
+        ),
+
+
+        // --- ------------------
+        Book(
+            isbn = "978-0-13-468599-1",
+            title = "Effective Java",
+            nbPages = 416
+        ),
+
+        Book(
+            isbn = "978-1-61729-960-5",
+            title = "Kotlin in Action, Second Edition",
+            nbPages = 560
+        ),
+
+        Book(
+            isbn = "978-0-13-525756-2",
+            title = "Android Programming: The Big Nerd Ranch Guide",
+            nbPages = 624
+        ),
+
+        Book(
+            isbn = "978-0-13-449416-6",
+            title = "Clean Architecture",
+            nbPages = 432
+        ),
+
+        Book(
+            isbn = "978-0-13-110362-7",
+            title = "The C Programming Language",
+            nbPages = 272
+        )
     )
 
     /**
