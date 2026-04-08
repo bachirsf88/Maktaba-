@@ -1,4 +1,4 @@
-package com.ElOuedUniv.maktaba.presentation.view
+package com.ElOuedUniv.maktaba.presentation.category
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,14 +13,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.ElOuedUniv.maktaba.data.model.Category
-import com.ElOuedUniv.maktaba.presentation.viewmodel.CategoryViewModel
+import com.ElOuedUniv.maktaba.presentation.category.CategoryViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryListView(
-    viewModel: CategoryViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    viewModel: CategoryViewModel = hiltViewModel()
 ) {
     val categories by viewModel.categories.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -74,20 +75,13 @@ fun CategoryList(
     categories: List<Category>,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
-
-    Text(
-        text = "Total Categories: ${categories.size}",
-        style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(16.dp)
-    )
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(categories) { category ->
-            CategoryItem(category = category)}
+            CategoryItem(category = category)
         }
     }
 }
@@ -108,9 +102,9 @@ fun CategoryItem(category: Category) {
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
-
+            
             Spacer(modifier = Modifier.height(8.dp))
-
+            
             Text(
                 text = category.description,
                 style = MaterialTheme.typography.bodyMedium,

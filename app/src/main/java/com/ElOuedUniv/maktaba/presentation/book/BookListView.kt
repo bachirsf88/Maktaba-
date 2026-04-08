@@ -1,29 +1,61 @@
-package com.ElOuedUniv.maktaba.presentation.view
+package com.ElOuedUniv.maktaba.presentation.book
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import com.ElOuedUniv.maktaba.data.model.Book
-import com.ElOuedUniv.maktaba.presentation.viewmodel.BookViewModel
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookListView(
-    viewModel: BookViewModel,
-    onCategoriesClick: () -> Unit = {}
+    onCategoriesClick: () -> Unit = {},
+    viewModel: BookViewModel = hiltViewModel()
 ) {
-    val books by viewModel.books.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collectLatest { event ->
+            when (event) {
+                is BookUiEvent.ShowMessage -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    if (uiState.isAddingBook) {
+        AddBookDialog(
+            onDismiss = { viewModel.onAction(BookUiAction.OnDismissAddBook) },
+            onConfirm = { title, isbn, pages ->
+                viewModel.onAction(
+                    BookUiAction.OnAddBookConfirm(
+                        Book(
+                            isbn = isbn,
+                            title = title,
+                            nbPages = pages
+                        )
+                    )
+                )
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -42,6 +74,16 @@ fun BookListView(
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = {
+                viewModel.onAction(BookUiAction.OnAddBookClick)
+            }) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = "Add Book"
+                )
+            }
         }
     ) { paddingValues ->
         Box(
@@ -49,18 +91,18 @@ fun BookListView(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (isLoading) {
+            if (uiState.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center)
                 )
             } else {
-                if (books.isEmpty()) {
+                if (uiState.books.isEmpty()) {
                     EmptyBooksMessage(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 } else {
                     BookList(
-                        books = books,
+                        books = uiState.books,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -154,10 +196,9 @@ fun EmptyBooksMessage(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Complete the TODO exercises in BookRepository.kt",
+            text = "Tap + to add a book",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
-
