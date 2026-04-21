@@ -19,7 +19,7 @@ class BookRepositoryImpl @Inject constructor() : BookRepository {
     )
 
     private val booksFlow = MutableSharedFlow<List<Book>>(replay = 1).apply {
-        tryEmit(_booksList)
+        tryEmit(_booksList.toList())
     }
     
     override fun getAllBooks(): Flow<List<Book>> = flow {

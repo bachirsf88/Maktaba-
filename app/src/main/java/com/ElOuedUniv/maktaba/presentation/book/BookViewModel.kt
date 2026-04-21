@@ -5,17 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.ElOuedUniv.maktaba.data.model.Book
 import com.ElOuedUniv.maktaba.domain.usecase.AddBookUseCase
 import com.ElOuedUniv.maktaba.domain.usecase.GetBooksUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.update
+import javax.inject.Inject
 
 @HiltViewModel
 class BookViewModel @Inject constructor(
@@ -26,35 +23,29 @@ class BookViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(BookUiState())
     val uiState: StateFlow<BookUiState> = _uiState.asStateFlow()
 
-    private val _uiEvent = Channel<BookUiEvent>()
-    val uiEvent = _uiEvent.receiveAsFlow()
-
     init {
         loadBooks()
     }
 
-    private fun loadBooks() {
+    fun loadBooks() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             getBooksUseCase()
-                .catch {
-                    _uiState.update { state ->
-                        state.copy(isLoading = false)
-                    }
+                .catch { e ->
+                    _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
                 }
                 .collect { bookList ->
-                    _uiState.update { state ->
-                        state.copy(
-                            isLoading = false,
-                            books = bookList
-                        )
-                    }
+                    _uiState.update { it.copy(isLoading = false, books = bookList) }
                 }
         }
     }
 
+    /**
+     * Exercise 3 - Handle UI Actions
+     */
     fun onAction(action: BookUiAction) {
         when (action) {
+            BookUiAction.RefreshBooks -> refreshBooks()
             BookUiAction.OnAddBookClick -> {
                 _uiState.update { it.copy(isAddingBook = true) }
             }
@@ -62,16 +53,18 @@ class BookViewModel @Inject constructor(
                 _uiState.update { it.copy(isAddingBook = false) }
             }
             is BookUiAction.OnAddBookConfirm -> {
-                addBook(action.book)
+                val newBook = Book(
+                    isbn = action.isbn,
+                    title = action.title,
+                    nbPages = action.nbPages
+                )
+                addBookUseCase(newBook)
+                _uiState.update { it.copy(isAddingBook = false) }
             }
         }
     }
 
-    private fun addBook(book: Book) {
-        viewModelScope.launch {
-            addBookUseCase(book)
-            _uiState.update { it.copy(isAddingBook = false) }
-            _uiEvent.send(BookUiEvent.ShowMessage("Book added successfully"))
-        }
+    fun refreshBooks() {
+        loadBooks()
     }
 }
