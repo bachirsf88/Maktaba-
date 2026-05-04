@@ -38,12 +38,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ElOuedUniv.maktaba.data.model.Book
+import coil.compose.AsyncImage
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -126,7 +128,7 @@ private fun BookDetailContent(
     ) {
         item {
             DetailCoverCard(
-                title = book.title,
+                book = book,
                 modifier = Modifier.fillMaxWidth(0.72f)
             )
         }
@@ -180,7 +182,7 @@ private fun BookDetailContent(
 
 @Composable
 private fun DetailCoverCard(
-    title: String,
+    book: Book,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -189,34 +191,43 @@ private fun DetailCoverCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(24.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+        if (!book.imageUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = book.imageUrl,
+                contentDescription = book.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .clip(MaterialTheme.shapes.large)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(horizontal = 18.dp, vertical = 10.dp)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(MaterialTheme.shapes.large)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .padding(horizontal = 18.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = "Book cover",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     Text(
-                        text = "Book cover",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = book.title,
+                        style = MaterialTheme.typography.headlineMedium,
+                        textAlign = TextAlign.Center
                     )
                 }
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineMedium,
-                    textAlign = TextAlign.Center
-                )
             }
         }
     }

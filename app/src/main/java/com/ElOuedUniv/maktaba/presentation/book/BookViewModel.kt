@@ -58,8 +58,10 @@ class BookViewModel @Inject constructor(
                     title = action.title,
                     nbPages = action.nbPages
                 )
-                addBookUseCase(newBook)
-                _uiState.update { it.copy(isAddingBook = false) }
+                viewModelScope.launch {
+                    addBookUseCase(newBook)
+                    _uiState.update { it.copy(isAddingBook = false) }
+                }
             }
         }
     }

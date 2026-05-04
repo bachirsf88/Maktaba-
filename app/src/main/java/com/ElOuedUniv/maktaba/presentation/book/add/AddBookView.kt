@@ -1,7 +1,10 @@
 package com.ElOuedUniv.maktaba.presentation.book.add
 
+import android.content.Context
+import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -30,16 +34,27 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,11 +63,62 @@ fun AddBookView(
     viewModel: AddBookViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    var showImageSourceDialog by remember { mutableStateOf(false) }
+    var pendingCameraImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            viewModel.onAction(AddBookUiAction.OnCoverChange(uri))
+        }
+    )
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { isSuccess ->
+            if (isSuccess) {
+                viewModel.onAction(AddBookUiAction.OnCoverChange(pendingCameraImageUri))
+            }
+        }
+    )
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
             onBackClick()
         }
+    }
+
+    if (showImageSourceDialog) {
+        AlertDialog(
+            onDismissRequest = { showImageSourceDialog = false },
+            title = { Text("Select cover image") },
+            text = { Text("Choose a source for the book cover.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showImageSourceDialog = false
+                        photoPickerLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    }
+                ) {
+                    Text("Gallery")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showImageSourceDialog = false
+                        val imageUri = createCameraImageUri(context)
+                        pendingCameraImageUri = imageUri
+                        cameraLauncher.launch(imageUri)
+                    }
+                ) {
+                    Text("Camera")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -90,7 +156,12 @@ fun AddBookView(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            CoverPlaceholderCard()
+            CoverPlaceholderCard(
+                imageUri = uiState.selectedImageUri,
+                onClick = {
+                    showImageSourceDialog = true
+                }
+            )
 
             if (uiState.errorMessage != null) {
                 ErrorCard(message = uiState.errorMessage!!)
@@ -139,11 +210,15 @@ fun AddBookView(
 }
 
 @Composable
-private fun CoverPlaceholderCard() {
+private fun CoverPlaceholderCard(
+    imageUri: Uri?,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp),
+            .height(220.dp)
+            .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
@@ -154,34 +229,43 @@ private fun CoverPlaceholderCard() {
                 .background(MaterialTheme.colorScheme.surface),
             contentAlignment = Alignment.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .clip(MaterialTheme.shapes.large)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(18.dp)
+            if (imageUri != null) {
+                AsyncImage(
+                    model = imageUri,
+                    contentDescription = "Book Cover",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AddPhotoAlternate,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(36.dp)
+                    Box(
+                        modifier = Modifier
+                            .clip(MaterialTheme.shapes.large)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .padding(18.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AddPhotoAlternate,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                    Text(
+                        text = "Add cover image",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = "Tap to select an image from your gallery.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 28.dp)
                     )
                 }
-                Text(
-                    text = "Add cover image",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "Image picking can be added later. This keeps the layout ready.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 28.dp)
-                )
             }
         }
     }
@@ -228,5 +312,15 @@ private fun FormField(
             }
         },
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType)
+    )
+}
+
+private fun createCameraImageUri(context: Context): Uri {
+    val imagesDir = File(context.cacheDir, "images").apply { mkdirs() }
+    val imageFile = File.createTempFile("book_cover_", ".jpg", imagesDir)
+    return FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        imageFile
     )
 }

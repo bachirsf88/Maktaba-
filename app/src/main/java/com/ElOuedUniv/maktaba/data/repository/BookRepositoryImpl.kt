@@ -27,11 +27,11 @@ class BookRepositoryImpl @Inject constructor() : BookRepository {
         emitAll(booksFlow)
     }
 
-    override fun getBookByIsbn(isbn: String): Book? {
+    override suspend fun getBookByIsbn(isbn: String): Book? {
         return _booksList.find { it.isbn == isbn }
     }
 
-    override fun addBook(book: Book) {
+    override suspend fun addBook(book: Book) {
         _booksList.add(book)
         booksFlow.tryEmit(_booksList.toList())
     }
